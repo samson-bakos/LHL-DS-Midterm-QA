@@ -1,19 +1,8 @@
-# Data Science Midterm Project
 
-## Project/Goals
-(fill in your description and goals here)
+# Data Science Midterm QA
 
-## Process
-### (your step 1)
-- (details)
-### (your step 2)
-### (your step 2)
+QA version of the Midterm Assignment for LHL DS 5.0 Curriculum
 
-## Results
-(fill in how your model performed)
+QA by: Samson Bakos
 
-## Challenges 
-(discuss challenges you faced in the project)
-
-## Future Goals
-(what would you do if you had more time?)
+Blind test of project workflow to identify possible student issues
