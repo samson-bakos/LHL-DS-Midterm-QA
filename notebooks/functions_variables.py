@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 import warnings
-from sklearn.base import TransformerMixin
-from sklearn.model_selection import train_test_split
+from sklearn.base import TransformerMixin, BaseEstimator
+import pickle
 
 
 def encode_tags(df):
@@ -46,43 +46,6 @@ class ColumnSelector(TransformerMixin):
         return X[[col for col in self.column_list if col in X.columns]]
 
 
-class TagsEncoder(TransformerMixin):
-    def __init__(self, threshold):
-        self.threshold = threshold
-
-    def fit(self, X, y=None):
-        # Determine tags to include based on threshold
-        self.tags_to_include = []
-        tag_counts = {}
-        for sublist in X["tags"]:
-            if isinstance(sublist, list):
-                for tag in sublist:
-                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
-        total_count = len(X["tags"])
-        for tag, count in tag_counts.items():
-            if count / total_count >= self.threshold:
-                self.tags_to_include.append(tag)
-        return self
-
-    def transform(self, X):
-        # Create a DataFrame for tags with zeros
-        tag_df = pd.DataFrame(0, index=X.index, columns=self.tags_to_include)
-
-        # Fill in tags
-        for tag in self.tags_to_include:
-            tag_df[tag] = X["tags"].apply(
-                lambda x: 1 if isinstance(x, list) and tag in x else 0
-            )
-
-        # Concatenate tag_df and original feature set
-        X_encoded = pd.concat([X, tag_df], axis=1)
-
-        # Drop the original 'tags' column
-        X_encoded.drop("tags", axis=1, inplace=True)
-
-        return X_encoded
-
-
 class DropMissingValues(TransformerMixin):
     def __init__(self, columns):
         self.columns = columns
@@ -121,11 +84,95 @@ class TypeTransformer(TransformerMixin):
         return X
 
 
-class TrainTestSplitter:
+class MergeAndImputeTransformer(TransformerMixin):
+    def __init__(self, input_df_path):
+        self.input_df_path = input_df_path
+
     def fit(self, X, y=None):
         return self
 
-    def transform(self, X, y=None):
-        # Perform train-test split
-        train_df, test_df = train_test_split(X, test_size=0.2, random_state=42)
-        return train_df, test_df
+    def transform(self, X):
+        # Read the second dataframe from the specified directory
+        input_df = pd.read_csv(self.input_df_path)
+
+        # Merge the dataframes
+        merged_df = X.merge(input_df, how="left", on="location.address.city")
+
+        # Impute missing values with the mean
+        merged_df["city_mean_sold_price"].fillna(
+            merged_df["city_mean_sold_price"].mean(), inplace=True
+        )
+
+        # Drop the 'location.address.city' column
+        merged_df.drop(columns=["location.address.city"], inplace=True)
+
+        return merged_df
+
+
+class TagsEncoder(TransformerMixin):
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        # No need to collect unique tags in fit
+        return self
+
+    def transform(self, X):
+        # Create an empty list to collect all tags
+        all_tags = []
+
+        # Iterate over each sublist in the 'tags' column
+        for sublist in X["tags"]:
+            if isinstance(sublist, list):
+                all_tags.extend(sublist)
+
+        # Create DataFrame of binary columns for each unique tag
+        tag_df = pd.get_dummies(
+            pd.DataFrame(all_tags, columns=["tags"]),
+            columns=["tags"],
+            prefix="",
+            prefix_sep="",
+        )
+
+        # Concatenate tag_df and original feature set
+        X_encoded = pd.concat([X.drop("tags", axis=1), tag_df], axis=1)
+
+        return X_encoded
+
+
+class PretrainedMinMaxScale(TransformerMixin):
+    def __init__(self, scaler_path):
+        self.scaler_path = scaler_path
+        self.scaler = None
+
+    def fit(self, X, y=None):
+        # Load the scaler from the pickle file
+        with open(self.scaler_path, "rb") as f:
+            self.scaler = pickle.load(f)
+        return self
+
+    def transform(self, X):
+        # Transform the current dataframe using the loaded scaler
+        X_scaled = pd.DataFrame(
+            self.scaler.transform(X), columns=X.columns, index=X.index
+        )
+        return X_scaled
+
+
+class PredictionsFromModel(TransformerMixin, BaseEstimator):
+    def __init__(self, model_path):
+        self.model_path = model_path
+
+    def fit(self, X, y=None):
+        # No fitting necessary
+        return self
+
+    def transform(self, X):
+        # Load the pickled model
+        with open(self.model_path, "rb") as f:
+            model = pickle.load(f)
+
+        # Make predictions
+        predictions = model.predict(X)
+
+        return X, predictions
