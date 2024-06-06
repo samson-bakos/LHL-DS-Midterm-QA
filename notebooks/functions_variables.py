@@ -3,6 +3,7 @@ import pandas as pd
 import warnings
 from sklearn.base import TransformerMixin, BaseEstimator
 import pickle
+import numpy as np
 
 
 def encode_tags(df):
@@ -81,6 +82,9 @@ class TypeTransformer(TransformerMixin):
         X["description.type"] = X["description.type"].replace("condo", "condos")
         # Perform one-hot encoding for 'description.type' and 'description.sub_type' columns
         X = pd.get_dummies(X, columns=["description.type", "description.sub_type"])
+        X["description.sold_date"] = (
+            X["description.sold_date"].str.slice(0, 4).astype(int)
+        )
         return X
 
 
@@ -99,9 +103,9 @@ class MergeAndImputeTransformer(TransformerMixin):
         merged_df = X.merge(input_df, how="left", on="location.address.city")
 
         # Impute missing values with the mean
-        merged_df["city_mean_sold_price"].fillna(
-            merged_df["city_mean_sold_price"].mean(), inplace=True
-        )
+        merged_df["description.sold_price_city_mean"] = merged_df[
+            "description.sold_price_city_mean"
+        ].fillna(merged_df["description.sold_price_city_mean"].mean())
 
         # Drop the 'location.address.city' column
         merged_df.drop(columns=["location.address.city"], inplace=True)
@@ -176,3 +180,24 @@ class PredictionsFromModel(TransformerMixin, BaseEstimator):
         predictions = model.predict(X)
 
         return X, predictions
+
+
+class LogTransform(TransformerMixin):
+    def __init__(self, columns):
+        self.columns = columns
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X_transformed = X.copy()
+
+        # Drop rows with zero values in specified columns
+        for col in self.columns:
+            X_transformed = X_transformed[X_transformed[col] != 0]
+
+        # Apply logarithmic transformation
+        for col in self.columns:
+            X_transformed[col] = np.log(X_transformed[col])
+
+        return X_transformed
