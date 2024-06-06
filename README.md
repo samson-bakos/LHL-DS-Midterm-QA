@@ -1,12 +1,6 @@
 
-# Data Science Midterm QA
+# Data Science Midterm Demo
 
-QA version of the Midterm Assignment for LHL DS 5.0 Curriculum
+Demo version of the Midterm Assignment for LHL DS 5.0 Curriculum
 
-QA by: Samson Bakos
-
-Blind test of project workflow to identify possible student issues
-
-## Current Status:
-
-Main Workflow completed with issues identified. Some refactoring needed (commenting, functionalizing).
+Demo by: Samson Bakos
