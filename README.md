@@ -37,6 +37,8 @@ An XGBoost model was selected. Before tuning, this model yielded an $R^2$ score 
 
 Despite the marginally lower $R^2$ score in the tuned model, this model was selected due to a significantly lower MAE (mean error in actual dollars), achieving an MAE of $\pm 3756$, decreased from $\pm 8710$ in the untuned model. 
 
+A possible explanation for this change is that overfitting prevention measures integrated into the hyperparameter tuning may have prevented the model from capturing some extreme values (resulting in a higher squared error), while improving overall fit on the majoirty of typical values (resulting in decreased absolute error). 
+
 ## Challenges
 
 ### Preventing Data Leakage during Hyperparameter Tuning
