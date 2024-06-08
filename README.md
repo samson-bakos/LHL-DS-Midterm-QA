@@ -33,7 +33,11 @@ The goal of this project is to develop a robust model to predict housing prices 
 - **Pipeline Construction** (Stretch Goal): Build a pipeline that incorporates preprocessing steps and utilizes the tuned model to predict new data. Save this pipeline. 
 
 ## Results
-A Random Forest model was selected. Before tuning, this model yielded an $R^2$ score of 0.973, while the final tuned model had an $R^2$ of 0.996, indicating an extremely high level of predictive power. 
+An XGBoost model was selected. Before tuning, this model yielded an $R^2$ score of 0.998, while the final tuned model had an $R^2$ of 0.994, indicating an extremely high level of predictive power. 
+
+Despite the marginally lower $R^2$ score in the tuned model, this model was selected due to a significantly lower MAE (mean error in actual dollars), achieving an MAE of $\pm 3756$, decreased from $\pm 8710$ in the untuned model. 
+
+A possible explanation for this change is that overfitting prevention measures integrated into the hyperparameter tuning may have prevented the model from capturing some extreme values (resulting in a higher squared error), while improving overall fit on the majoirty of typical values (resulting in decreased absolute error). 
 
 ## Challenges
 
